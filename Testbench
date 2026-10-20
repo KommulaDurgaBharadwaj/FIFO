@@ -1,0 +1,162 @@
+`timescale 1ns / 1ps
+
+module FIFO_Design_tb;
+
+    reg        wen;
+    reg        rst;
+    reg [7:0]  din;
+    reg        w_clk;
+    reg        r_clk;
+    reg        ren;
+
+    wire       fifo_empty;
+    wire [7:0] dout;
+    wire       fifo_full;
+
+
+    //========================================================
+    // DUT INSTANTIATION
+    //========================================================
+
+    FIFO_Design DUT (
+        .wen        (wen),
+        .rst        (rst),
+        .din        (din),
+        .w_clk      (w_clk),
+        .r_clk      (r_clk),
+        .ren        (ren),
+        .fifo_empty (fifo_empty),
+        .dout       (dout),
+        .fifo_full  (fifo_full)
+    );
+
+
+    //========================================================
+    // WRITE CLOCK
+    // 10 ns period
+    //========================================================
+
+    initial begin
+        w_clk = 0;
+
+        forever #5 w_clk = ~w_clk;
+    end
+
+
+    //========================================================
+    // READ CLOCK
+    // 14 ns period
+    //========================================================
+
+    initial begin
+        r_clk = 0;
+
+        forever #7 r_clk = ~r_clk;
+    end
+
+
+    //========================================================
+    // TEST
+    //========================================================
+
+    initial begin
+
+        // Initial values
+        rst = 1;
+        wen = 0;
+        ren = 0;
+        din = 8'b0;
+
+
+        // Reset
+        #20;
+
+        rst = 0;
+
+
+        //====================================================
+        // WRITE DATA
+        //====================================================
+
+        // Write 10
+        @(posedge w_clk);
+        wen = 1;
+        din = 8'd10;
+
+        // Write 20
+        @(posedge w_clk);
+        din = 8'd20;
+
+        // Write 30
+        @(posedge w_clk);
+        din = 8'd30;
+
+        // Write 40
+        @(posedge w_clk);
+        din = 8'd40;
+
+        // Write 50
+        @(posedge w_clk);
+        din = 8'd50;
+
+        // Stop writing
+        @(posedge w_clk);
+        wen = 0;
+
+
+        // Wait
+        #30;
+
+
+        //====================================================
+        // READ DATA
+        //====================================================
+
+        @(posedge r_clk);
+        ren = 1;
+
+        @(posedge r_clk);
+
+        @(posedge r_clk);
+
+        @(posedge r_clk);
+
+        @(posedge r_clk);
+
+        // Stop reading
+        @(posedge r_clk);
+        ren = 0;
+
+
+        //====================================================
+        // END SIMULATION
+        //====================================================
+
+        #50;
+
+        $finish;
+
+    end
+
+
+    //========================================================
+    // MONITOR
+    //========================================================
+
+    initial begin
+
+        $monitor(
+            "TIME=%0t | rst=%b | wen=%b | din=%d | ren=%b | dout=%d | EMPTY=%b | FULL=%b",
+            $time,
+            rst,
+            wen,
+            din,
+            ren,
+            dout,
+            fifo_empty,
+            fifo_full
+        );
+
+    end
+
+endmodule
