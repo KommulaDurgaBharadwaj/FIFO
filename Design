@@ -1,0 +1,107 @@
+`timescale 1ns / 1ps
+//////////////////////////////////////////////////////////////////////////////////
+// Company: 
+// Engineer: 
+// 
+// Create Date: 20.09.2026 19:01:56
+// Design Name: 
+// Module Name: FIFO_Design
+// Project Name: 
+// Target Devices: 
+// Tool Versions: 
+// Description: 
+// 
+// Dependencies: 
+// 
+// Revision:
+// Revision 0.01 - File Created
+// Additional Comments:
+// 
+//////////////////////////////////////////////////////////////////////////////////
+
+
+module FIFO_Design(input wen,
+                    input rst,
+                    input [7:0] din,
+                    input w_clk,
+                    input r_clk,
+                    input ren,
+                    output  fifo_empty,
+                    output reg [7:0] dout,
+                    output  fifo_full);
+             
+                reg [7:0] mem[0:31];
+                reg [5:0] rd_ptr;
+                reg [5:0] wr_ptr;
+                    // Gray-code pointers
+                reg [5:0] wr_gray;
+                reg [5:0] rd_gray;
+            
+                // Synchronizers
+                reg [5:0] rd_gray_sync1;
+                reg [5:0] rd_gray_sync2;
+            
+                reg [5:0] wr_gray_sync1;
+                reg [5:0] wr_gray_sync2;
+                
+                assign fifo_full=(rd_ptr[5]!=wr_ptr[5] && rd_ptr[4:0]==wr_ptr[4:0])?1:0; 
+                assign fifo_empty=(rd_ptr==wr_ptr)?1:0;
+                always@(posedge w_clk) begin
+                        if( rst) begin
+                            wr_ptr<=6'b0;
+                        end
+                        else if(!fifo_full && wen) begin
+                            mem[wr_ptr[4:0]]<=din;
+                            wr_ptr<=wr_ptr+1;
+                        end
+                    
+                end
+                always@(posedge r_clk) begin
+                         if( rst) begin
+                               rd_ptr<=6'b0;
+                          end
+                          else if(!fifo_empty && ren) begin
+                                 dout<=mem[rd_ptr[4:0]];
+                                 rd_ptr<=rd_ptr+1;
+                           end
+                     
+                  end
+                    
+                      //========================================================
+                      // SYNCHRONIZE READ POINTER INTO WRITE CLOCK DOMAIN
+                      //========================================================
+                  
+                      always @(posedge w_clk) begin
+                  
+                          if (rst) begin
+                              rd_gray_sync1 <= 6'b0;
+                              rd_gray_sync2 <= 6'b0;
+                          end
+                  
+                          else begin
+                              rd_gray_sync1 <= rd_gray;
+                              rd_gray_sync2 <= rd_gray_sync1;
+                          end
+                  
+                      end
+                  
+                  
+                      //========================================================
+                      // SYNCHRONIZE WRITE POINTER INTO READ CLOCK DOMAIN
+                      //========================================================
+                  
+                      always @(posedge r_clk) begin
+                  
+                          if (rst) begin
+                              wr_gray_sync1 <= 6'b0;
+                              wr_gray_sync2 <= 6'b0;
+                          end
+                  
+                          else begin
+                              wr_gray_sync1 <= wr_gray;
+                              wr_gray_sync2 <= wr_gray_sync1;
+                          end
+                  
+                      end    
+                    
+endmodule
